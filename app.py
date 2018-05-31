@@ -1,45 +1,36 @@
-#!flask/bin/python
+import threading
 
 from flask import Flask, jsonify, abort, make_response, request
-from work import Task, Dispatcher
-from threading import Thread
-import collections
+from redis import Redis
+from rq import Queue
 
-dispatcher = Dispatcher()
-
-#m = Thread(target=dispatcher.produce, args=())
-#m.start()
+from work import Dispatcher
 
 app = Flask(__name__)
+#redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+dispatcher = Dispatcher()
+queue = Queue(connection=Redis.from_url('redis://'), default_timeout=3600)
+job = queue.enqueue_call(dispatcher.produce)
 
 @app.route('/v1/task/<task_uuid>', methods=['GET'])
 def get_task(task_uuid):
-    search_task = [task for task in dispatcher.done_work if [x for x in task['task_uuid'].keys()][0] == task_uuid]
-    status = search_task[0]['task_uuid'][task_uuid]['status']
-    result = search_task[0]['task_uuid'][task_uuid]['result']
-    data = {'status':status, 'results':result}
-    new_data = collections.OrderedDict(sorted(data.items(), key=lambda t: t[0]))
-    if len(search_task) == 0:
+    if task_uuid not in dispatcher.tasks:
         abort(404)
-    return jsonify(new_data)
+    task = dispatcher.tasks[task_uuid]
+    data = {'status': task.status, 'result': task.result}
+    return jsonify(data)
 
 
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
-
 @app.route('/v1/task/', methods=['POST'])
 def create_task():
-    url = {'url': request.json['url']}
-    dispatcher.push(url['url'])
-    dispatcher.create_task()
-    index = len(dispatcher.work_queue) -1
-    data = dispatcher.work_queue[index].get_data()
-    uuid = [x for x in data['task_uuid'].keys()][0]
-    dispatcher.produce()
-    return jsonify({'task_uuid':uuid}), 201
+    url = request.json['url']
+    uuid = dispatcher.create_task(url)
+    return jsonify({'task_uuid': uuid})
 
 
 if __name__ == '__main__':
