@@ -8,5 +8,5 @@ setup(
     license='',
     author='sthelena',
     author_email='',
-    description=''
+    description='', install_requires=['flask', 'redis', 'rq', 'lxml']
 )
