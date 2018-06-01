@@ -1,11 +1,17 @@
+import os
+
 from flask import Flask, jsonify, abort, make_response, request
 from redis import Redis
 from rq import Queue
 
-from work import get_result, Task
+
+if __name__ == '__main__':
+    from work import get_result, Task
+else:
+    from api.work import get_result, Task
 
 app = Flask(__name__)
-queue = Queue(connection=Redis())
+queue = Queue(connection=Redis(host=os.getenv('REDIS_HOST', 'localhost'), db=0))
 
 
 @app.route('/v1/task/<task_uuid>', methods=['GET'])
@@ -16,7 +22,7 @@ def get_task(task_uuid):
     task = job.result
     if task is None:
         task = Task()
-    return jsonify(task)
+    return jsonify({'status': task.status, 'result': task.result})
 
 
 @app.errorhandler(404)

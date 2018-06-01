@@ -1,5 +1,15 @@
 version: '2'
 services:
+  rest_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    depends_on:
+      - redis
+    links:
+      - redis
   redis:
     image: redis:4.0.9-alpine
     ports:
