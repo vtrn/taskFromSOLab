@@ -11,3 +11,27 @@ API сервиса состоит из следующих методов:
 POST        v1/task
 GET        v1/task
 *****************************************
+POST v1/task
+Запрос:
+{
+    "url":  "https://yandex.ru/"
+}
+
+Ответ:
+{
+    "task_uuid": "<UUID>"
+}
+  
+  
+  GET v1/task
+Запрос:
+{
+    "task_uuid": “<UUID>”
+}
+В запросе передаем <UUID> задачи.
+
+Ответ:
+{
+    "status": "<STATUS>"
+    "result": ... 
+}
